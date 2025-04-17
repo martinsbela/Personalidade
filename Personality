@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personality Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+        }
+        h2, p, h3 {
+            margin: 20px;
+        }
+        .question, .feedback {
+            display: none;
+            margin-bottom: 20px;
+        }
+        .button {
+            background-color: #90ee90;
+            font-weight: bold;
+            padding: 12px 25px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .selected {
+            background-color: #ff9800 !important;
+        }
+        #next, #restart, #sendFeedback {
+            display: none;
+        }
+        #viewContent {
+            display: none;
+            background-color: #90ee90;
+            font-weight: bold;
+            padding: 12px 25px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        #viewContent:hover {
+            background-color: #45a049;
+        }
+        #videoContainer {
+            margin-top: 20px;
+        }
+        .feedback input[type="radio"] {
+            margin: 5px;
+        }
+    </style>
+    <script>
+        let points = { AC: 0, CM: 0, AV: 0, DR: 0 };
+        let currentPage = 0;
+
+        function validateEmail(email) {
+            const validDomains = ["gmail.com", "hotmail.com", "outlook.com", "protonmail.com", "aol.com", "zoho.com", "icloud.com", "yahoo.com.br", "gmx.com"];
+            const emailParts = email.split("@");
+            return emailParts.length === 2 && validDomains.includes(emailParts[1]);
+        }
+
+        function startTest() {
+            let name = document.getElementById("name").value.trim();
+            let age = document.getElementById("age").value;
+            let email = document.getElementById("email").value.trim();
+            let cpf = document.getElementById("cpf").value.trim();
+            let gender = document.querySelector('input[name="gender"]:checked');
+
+            if (name === "" || age === "" || isNaN(age) || age < 18 || email === "" || cpf.length !== 3 || isNaN(cpf) || !gender) {
+                alert("Please fill in all fields correctly.");
+                return;
+            }
+            if (!validateEmail(email)) {
+                alert("Please enter a valid email address.");
+                return;
+            }
+
+            document.getElementById("intro").style.display = "none";
+            showQuestion();
+        }
+
+        function showQuestion() {
+            let questions = document.getElementsByClassName("question");
+            for (let i = 0; i < questions.length; i++) {
+                questions[i].style.display = "none";
+            }
+            if (currentPage < questions.length) {
+                questions[currentPage].style.display = "block";
+                document.getElementById("next").style.display = "none";
+            } else {
+                calculatePersonality();
+            }
+        }
+
+        function selectAnswer(value, button) {
+            points[value]++;
+            let buttons = document.querySelectorAll(`.question:nth-of-type(${currentPage + 1}) .button`);
+            buttons.forEach(b => b.classList.remove("selected"));
+            button.classList.add("selected");
+            document.getElementById("next").style.display = "block";
+        }
+
+        function nextQuestion() {
+            currentPage++;
+            showQuestion();
+        }
+
+        function calculatePersonality() {
+            let personality = Object.keys(points).reduce((a, b) => points[a] >= points[b] ? a : b);
+            let description = {
+                AC: "Action",
+                CM: "Comedy",
+                AV: "Adventure",
+                DR: "Drama"
+            };
+            let videos = {
+                AC: "https://www.youtube.com/embed/zBjJUV-lzHo",
+                CM: "https://www.youtube.com/embed/zBjJUV-lzHo",
+                AV: "https://www.youtube.com/embed/zBjJUV-lzHo",
+                DR: "https://www.youtube.com/embed/zBjJUV-lzHo"
+            };
+            let videoUrl = videos[personality];
+
+            document.getElementById("result").innerText = `Your preferred genre is: ${description[personality]}`;
+            document.getElementById("next").style.display = "none";
+            document.getElementById("restart").style.display = "block";
+            document.getElementById("viewContent").style.display = "block";
+
+            document.getElementById("viewContent").onclick = function () {
+                let videoContainer = document.getElementById("videoContainer");
+                videoContainer.innerHTML = `<iframe width="560" height="315" src="${videoUrl}" frameborder="0" allowfullscreen></iframe>`;
+                document.getElementById("viewContent").disabled = true;
+                document.getElementById("feedback").style.display = "block";
+                document.getElementById("sendFeedback").style.display = "block";
+            };
+        }
+
+        function sendFeedback() {
+            let compatibility = document.querySelector('input[name="compatibility"]:checked');
+            let alternativeEndings = document.querySelector('input[name="alternativeEndings"]:checked');
+            let openTvFunctionality = document.querySelector('input[name="openTvFunctionality"]:checked');
+            let interestAlternativeEndings = document.querySelector('input[name="interestAlternativeEndings"]:checked');
+
+            if (!compatibility || !alternativeEndings || !openTvFunctionality || !interestAlternativeEndings) {
+                alert("Please answer all feedback questions.");
+                return;
+            }
+
+            let feedbackData = {
+                compatibility: compatibility.value,
+                alternativeEndings: alternativeEndings.value,
+                openTvFunctionality: openTvFunctionality.value,
+                interestAlternativeEndings: interestAlternativeEndings.value
+            };
+
+            let name = document.getElementById("name").value;
+            let age = document.getElementById("age").value;
+            let email = document.getElementById("email").value;
+            let cpf = document.getElementById("cpf").value;
+            let gender = document.querySelector('input[name="gender"]:checked').value;
+            let profile = Object.keys(points).reduce((a, b) => points[a] >= points[b] ? a : b);
+
+            let selectedButtons = document.querySelectorAll(".selected");
+            let questionAnswers = [];
+            selectedButtons.forEach(button => {
+                questionAnswers.push(button.innerText);
+            });
+
+            sendToSpreadsheet(name, age, email, cpf, gender, profile, questionAnswers, feedbackData);
+
+            document.body.innerHTML = "<h2>Enjoy your new TV 3.0 based on your preferences!</h2>";
+        }
+
+        function sendToSpreadsheet(name, age, email, cpf, gender, profile, questionAnswers, feedbackData) {
+            const url = "https://script.google.com/macros/s/AKfycbz-npRz3-Xrtkk1dYXERmMv8yqGIsrbHa1xqKPpvDmAuL5thTcZCvPRtu5PpuKMtmM/exec";
+
+            let data = {
+                name: name,
+                age: age,
+                email: email,
+                cpf: cpf,
+                gender: gender,
+                profile: profile,
+                questionAnswers: questionAnswers.join(", "),
+                feedback: JSON.stringify(feedbackData)
+            };
+
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.text())
+            .then(responseData => {
+                console.log("Server response:", responseData);
+                alert("Feedback sent successfully!");
+            })
+            .catch(error => {
+                console.error("Error sending data:", error);
+                alert("Error sending data. Check the console for more details.");
+            });
+        }
+
+        function restartTest() {
+            points = { AC: 0, CM: 0, AV: 0, DR: 0 };
+            currentPage = 0;
+            document.getElementById("result").innerText = "";
+            document.getElementById("videoContainer").innerHTML = "";
+            document.getElementById("feedback").style.display = "none";
+            document.getElementById("sendFeedback").style.display = "none";
+            document.getElementById("restart").style.display = "none";
+            document.getElementById("intro").style.display = "block";
+            document.getElementById("viewContent").style.display = "none";
+            document.getElementById("viewContent").disabled = false;
+        }
+    </script>
+</head>
+<body>
+    <div id="intro">
+        <h2>Preferred Movie Genre Test!</h2>
+        <p>Fill in the fields below:</p>
+        <input type="text" id="name" placeholder="Name"><br><br>
+        <input type="number" id="age" placeholder="Age"><br><br>
+        <input type="email" id="email" placeholder="E-mail"><br><br>
+        <input type="text" id="cpf" maxlength="3" placeholder="First 3 digits of CPF"><br><br>
+        <p>Gender:</p>
+        <input type="radio" name="gender" value="Female"> Female
+        <input type="radio" name="gender" value="Male"> Male
+        <input type="radio" name="gender" value="Other"> Other
+        <br><br>
+        <button id="começar" onclick="startTest()">Start</button>
+    </div>
+    <div class="question">
+        <p>Which of the following movies do you like the most?</p>
+        <button class="button" onclick="selectAnswer('AC', this)">The Fast and the Furious</button>
+        <button class="button" onclick="selectAnswer('CM', this)">Shrek</button>
+        <button class="button" onclick="selectAnswer('AV', this)">Harry Potter</button>
+        <button class="button" onclick="selectAnswer('DR', this)">Titanic</button>
+    </div>
+    <div class="question">
+        <p>Which of the following series do you like the most?</p>
+        <button class="button" onclick="selectAnswer('DR', this)">Breaking Bad</button>
+        <button class="button" onclick="selectAnswer('AC', this)">Cobra Kai</button>
+        <button class="button" onclick="selectAnswer('CM', this)">Friends</button>
+        <button class="button" onclick="selectAnswer('AV', this)">Stranger Things</button>
+    </div>
+    <div class="question">
+        <p>Of the following soap operas, which one best matches your taste?</p>
+        <button class="button" onclick="selectAnswer('DR', this)">Avenida Brasil</button>
+        <button class="button" onclick="selectAnswer('CM', this)">Tapas e Beijos</button>
+        <button class="button" onclick="selectAnswer('AV', this)">Salve Jorge</button>
+        <button class="button" onclick="selectAnswer('AC', this)">Arcanjo Renegado</button>
+    </div>
+    <div class="question">
+        <p>If you could choose a superpower, which would it be?</p>
+        <button class="button" onclick="selectAnswer('AC', this)">Super speed</button>
+        <button class="button" onclick="selectAnswer('CM', this)">Making anyone laugh</button>
+        <button class="button" onclick="selectAnswer('AV', this)">Magic</button>
+        <button class="button" onclick="selectAnswer('DR', this)">Reading minds</button>
+    </div>
+    <div class="question">
+        <p>When looking for content, your main goal is:</p>
+        <button class="button" onclick="selectAnswer('CM', this)">To have a good laugh</button>
+        <button class="button" onclick="selectAnswer('DR', this)">Emotional and profound stories</button>
+        <button class="button" onclick="selectAnswer('AV', this)">Fictional adventures</button>
+        <button class="button" onclick="selectAnswer('AC', this)">Something fast-paced that holds your attention</button>
+    </div>
+    <button id="next" onclick="nextQuestion()">Next</button>
+    <h3 id="result"></h3>
+    <button id="viewContent">View my personalized content</button>
+    <div id="videoContainer"></div>
+    <div id="feedback" class="feedback">
+        <h3>What did you think of this content?</h3>
+        <p>On a scale of 1 to 5, how compatible was this content with your previously stated interests?</p>
+        <label><input type="radio" name="compatibility" value="1"> 1</label>
+        <label><input type="radio" name="compatibility" value="2"> 2</label>
+        <label><input type="radio" name="compatibility" value="3"> 3</label>
+        <label><input type="radio" name="compatibility" value="4"> 4</label>
+        <label><input type="radio" name="compatibility" value="5"> 5</label>
+        <p>Would you be interested in watching alternative endings for this story?</p>
+        <label><input type="radio" name="alternativeEndings" value="Yes"> Yes</label>
+        <label><input type="radio" name="alternativeEndings" value="No"> No</label>
+        <p>Would you like this feature to be available on Open TV?</p>
+        <label><input type="radio" name="openTvFunctionality" value="Yes"> Yes</label>
+        <label><input type="radio" name="openTvFunctionality" value="No"> No</label>
+        <p>Would you be curious to watch, on a streaming platform, the other alternative endings that were not directed to your profile on the Open TV schedule?</p>
+        <label><input type="radio" name="interestAlternativeEndings" value="Yes"> Yes</label>
+        <label><input type="radio" name="interestAlternativeEndings" value="No"> No</label>
+    </div>
+    <button id="sendFeedback" onclick="sendFeedback()">Send Feedback</button>
+    <button id="restart" onclick="restartTest()">Answer again</button>
+</body>
+</html>
