@@ -1,0 +1,38 @@
+function doPost(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  var origin = e.headers['Origin'];
+  var allowedOrigins = [
+    'https://1450364264-atari-embeds.googleusercontent.com',
+    // Adicione outras origens permitidas aqui, se necessário
+    'https://app.onecompiler.com' // Se você ainda estiver testando lá
+  ];
+
+  var output = ContentService.createTextOutput("Dados recebidos com sucesso!");
+  output.setMimeType(ContentService.MimeType.TEXT);
+
+  if (allowedOrigins.indexOf(origin) > -1) {
+    output.addHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    // Se a origem não for permitida, você pode optar por não adicionar o cabeçalho CORS
+    // ou retornar um erro específico.
+    Logger.log('Origem não permitida: ' + origin);
+  }
+
+  sheet.appendRow([
+    data.nome,
+    data.idade,
+    data.email,
+    data.cpf,
+    data.genero,
+    data.perfil,
+    data.respostasPerguntas,
+    data.feedback.compatibilidade,
+    data.feedback.finaisAlternativos,
+    data.feedback.funcionalidadeTvAberta,
+    data.feedback.interesseFinaisAlternativos
+  ]);
+
+  return output;
+}
